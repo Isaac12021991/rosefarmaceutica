@@ -1,0 +1,73 @@
+;
+//asignar un nombre y versión al cache
+const CACHE_NAME = 'v1_cache_programador_fitness',
+  urlsToCache = [
+    './',
+    'https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/custom/jquery/jquery-3.3.1.min.js',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/custom/fullcalendar/fullcalendar.bundle.css',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/global/plugins.bundle.min.css',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/custom/prismjs/prismjs.bundle.css',
+    'https://empresa.rosefarmaceutica.com/assets/css/style.bundle.css',
+    'https://empresa.rosefarmaceutica.com/assets/css/themes/layout/header/base/light.css',
+    'https://empresa.rosefarmaceutica.com/assets/css/themes/layout/header/menu/light.css',
+    'https://empresa.rosefarmaceutica.com/assets/css/themes/layout/brand/dark.css',
+    'https://empresa.rosefarmaceutica.com/assets/css/themes/layout/aside/dark.css',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/global/plugins.bundle.min.js',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/custom/prismjs/prismjs.bundle.min.js',
+    'https://empresa.rosefarmaceutica.com/assets/js/scripts.bundle.min.js',
+    'https://empresa.rosefarmaceutica.com/assets/js/pages/widgets.min.js',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/custom/jquery-confirm/js/jquery-confirm.js',
+    'https://empresa.rosefarmaceutica.com/assets/js/pages/crud/file-upload/image-input.js',
+    'https://empresa.rosefarmaceutica.com/assets/plugins/custom/push.js-master/bin/push.min.js'
+
+  ]
+
+//durante la fase de instalación, generalmente se almacena en caché los activos estáticos
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(urlsToCache)
+          .then(() => self.skipWaiting())
+      })
+      .catch(err => console.log('Falló registro de cache', err))
+  )
+})
+
+//una vez que se instala el SW, se activa y busca los recursos para hacer que funcione sin conexión
+self.addEventListener('activate', e => {
+  const cacheWhitelist = [CACHE_NAME]
+
+  e.waitUntil(
+    caches.keys()
+      .then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            //Eliminamos lo que ya no se necesita en cache
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              return caches.delete(cacheName)
+            }
+          })
+        )
+      })
+      // Le indica al SW activar el cache actual
+      .then(() => self.clients.claim())
+  )
+})
+
+//cuando el navegador recupera una url
+self.addEventListener('fetch', e => {
+  //Responder ya sea con el objeto en caché o continuar y buscar la url real
+  e.respondWith(
+    caches.match(e.request)
+      .then(res => {
+        if (res) {
+          //recuperar del cache
+          return res
+        }
+        //recuperar de la petición a la url
+        return fetch(e.request)
+      })
+  )
+})
